@@ -11,16 +11,25 @@ class SocketService {
     connect() {
         if (this.socket) return;
 
+        console.log(`[SOCKET] Attempting connection to ${SOCKET_URL}...`);
+
         this.socket = io(SOCKET_URL, {
             transports: ["websocket", "polling"],
+            reconnectionAttempts: 3, // Limit retries to stop console clutter
+            timeout: 5000,
+            autoConnect: true
         });
 
         this.socket.on("connect", () => {
-            console.log("[SOCKET] Connected to real-time server");
+            console.log("%c[SOCKET] Connected to real-time server ✅", "color: #4CAF50; font-weight: bold;");
         });
 
         this.socket.on("connect_error", (error) => {
-            console.error("[SOCKET] Connection error:", error);
+            // Silencing aggressive error logging if backend isn't running
+            console.warn("[SOCKET] Service offline. Real-time features disabled.");
+            if (this.socket.active === false) {
+                this.socket.disconnect();
+            }
         });
 
         return this.socket;

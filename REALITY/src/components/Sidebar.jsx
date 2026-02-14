@@ -1,5 +1,5 @@
 import React from 'react';
-import { SquaresFour, Buildings, UsersThree, CalendarCheck, Gear, SignOut, Cube } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, UsersThree, CalendarCheck, Gear, SignOut, Cube, ChartBar } from '@phosphor-icons/react';
 
 import { authService } from '../services/api';
 

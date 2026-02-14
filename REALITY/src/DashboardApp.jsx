@@ -10,6 +10,8 @@ import ProjectSiteDashboard from './pages/dashboards/ProjectSiteDashboard';
 import ClientDashboard from './pages/dashboards/ClientDashboard';
 import Login from './pages/Login';
 import Chatbot from './components/Chatbot';
+import GlobalReports from './pages/GlobalReports';
+import BillingAndPlans from './pages/BillingAndPlans';
 import Settings from './pages/Settings';
 import { authService } from './services/api';
 import socketService from './services/socket';
@@ -49,10 +51,12 @@ function DashboardApp() {
 
   const renderPage = () => {
     if (currentPage === 'settings') return <Settings theme={theme} setTheme={setTheme} />;
+    if (currentPage === 'reports') return <GlobalReports setCurrentPage={setCurrentPage} />;
+    if (currentPage === 'billing') return <BillingAndPlans setCurrentPage={setCurrentPage} />;
 
     // Default to role-based dashboard if current page is 'dashboard' or unknown
     switch (user?.role) {
-      case 'admin': return <AdminDashboard />;
+      case 'admin': return <AdminDashboard setCurrentPage={setCurrentPage} />;
       case 'builder': return <BuilderDashboard />;
       case 'civil_engineer': return <CivilEngineerDashboard />;
       case 'project_site': return <ProjectSiteDashboard />;

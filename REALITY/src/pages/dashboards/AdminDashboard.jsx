@@ -4,8 +4,10 @@ import {
     PencilSimple, Plus, CreditCard, ListBullets, ChartBar,
     CaretRight, BellRinging, Globe, Lock, Download
 } from '@phosphor-icons/react';
+import CreateUserModal from '../../components/CreateUserModal';
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ setCurrentPage }) => {
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [users, setUsers] = useState([
         { id: 1, name: 'John Doe', role: 'Builder', status: 'Active', permissions: 'Full Access' },
         { id: 2, name: 'Alice Smith', role: 'Civil Engineer', status: 'Active', permissions: 'Site Reports' },
@@ -28,28 +30,49 @@ const AdminDashboard = () => {
         setUsers(users.map(u => u.id === id ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u));
     };
 
+    const handleCreateUser = (userData) => {
+        const newUser = {
+            id: users.length + 1,
+            name: userData.name || `${userData.firstName} ${userData.lastName}`,
+            role: userData.roles[0] || 'User', // Display primary role
+            status: userData.status,
+            permissions: userData.roles.includes('Admin') ? 'Full Access' : 'Standard'
+        };
+        setUsers([...users, newUser]);
+        setShowCreateModal(false);
+    };
+
     return (
         <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', paddingBottom: '5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Admin Control Center</h2>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
-                        background: 'white', color: 'var(--pivot-blue)', border: '1px solid var(--pivot-blue)',
-                        borderRadius: '12px', fontWeight: 700, cursor: 'pointer'
-                    }}>
+                    <button
+                        onClick={() => setCurrentPage('reports')}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                            background: 'white', color: 'var(--pivot-blue)', border: '1px solid var(--pivot-blue)',
+                            borderRadius: '12px', fontWeight: 700, cursor: 'pointer'
+                        }}
+                    >
                         <ChartBar size={20} weight="bold" /> Global Reports
                     </button>
-                    <button style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
-                        background: 'var(--pivot-blue)', color: 'white', border: 'none',
-                        borderRadius: '12px', fontWeight: 700, cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(0, 71, 171, 0.2)'
-                    }}>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                            background: 'var(--pivot-blue)', color: 'white', border: 'none',
+                            borderRadius: '12px', fontWeight: 700, cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(0, 71, 171, 0.2)'
+                        }}
+                    >
                         <UserPlus size={20} weight="bold" /> Create User
                     </button>
                 </div>
             </div>
+
+            {/* Create User Modal */}
+            {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} onSave={handleCreateUser} />}
 
             {/* Quick Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -134,7 +157,7 @@ const AdminDashboard = () => {
                         <div style={{ fontSize: '0.75rem', marginTop: '5px' }}>Next renewal: March 12, 2026</div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <button style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'var(--pivot-blue)', color: 'white', border: 'none', fontWeight: 600, fontSize: '0.85rem' }}>Manage Plan</button>
+                        <button onClick={() => setCurrentPage('billing')} style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'var(--pivot-blue)', color: 'white', border: 'none', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>Manage Plan</button>
                         <button style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.85rem' }}>History</button>
                     </div>
                 </div>

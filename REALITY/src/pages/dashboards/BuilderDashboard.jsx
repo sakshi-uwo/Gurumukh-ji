@@ -6,8 +6,14 @@ import {
     FileArrowUp, Calendar, Clock, Checks, FileText,
     Robot, HardDrive, MagnifyingGlass
 } from '@phosphor-icons/react';
+import CreateProjectModal from '../../components/CreateProjectModal';
+import AIPlanningModal from '../../components/AIPlanningModal';
+import ScheduleGenerationModal from '../../components/ScheduleGenerationModal';
 
 const BuilderDashboard = () => {
+    const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+    const [showAIPlanningModal, setShowAIPlanningModal] = useState(false);
+    const [showScheduleGenerationModal, setShowScheduleGenerationModal] = useState(false);
     const [projects, setProjects] = useState([
         {
             id: 1,
@@ -58,6 +64,26 @@ const BuilderDashboard = () => {
         { id: 2, name: 'Structural_Audit_Report.docx', project: 'Green Valley', type: 'Compliance' },
     ];
 
+    const handleCreateProject = (projectData) => {
+        const newProject = {
+            id: projects.length + 1,
+            name: projectData.projectName,
+            location: projectData.location || 'New Location',
+            budget: parseFloat(projectData.estimatedCost) || 0,
+            spent: 0,
+            progress: 0,
+            team: {
+                engineer: projectData.civilEngineer || 'Unassigned',
+                manager: projectData.siteManager || 'Unassigned',
+                vendor: 'Pending'
+            },
+            automation: projectData.automationEnabled ? 'Automated' : 'Manual',
+            milestones: []
+        };
+        setProjects([...projects, newProject]);
+        setShowCreateProjectModal(false);
+    };
+
     return (
         <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
@@ -73,16 +99,34 @@ const BuilderDashboard = () => {
                     }}>
                         <FileArrowUp size={20} weight="bold" /> Upload Docs
                     </button>
-                    <button style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px',
-                        background: 'var(--pivot-blue)', color: 'white', border: 'none',
-                        borderRadius: '12px', fontWeight: 700, cursor: 'pointer',
-                        boxShadow: '0 4px 15px rgba(0, 71, 171, 0.2)'
-                    }}>
+                    <button
+                        onClick={() => setShowCreateProjectModal(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px',
+                            background: 'var(--pivot-blue)', color: 'white', border: 'none',
+                            borderRadius: '12px', fontWeight: 700, cursor: 'pointer',
+                            boxShadow: '0 4px 15px rgba(0, 71, 171, 0.2)'
+                        }}
+                    >
                         <Plus size={20} weight="bold" /> Start New Project
                     </button>
                 </div>
             </div>
+
+            {showCreateProjectModal && (
+                <CreateProjectModal
+                    onClose={() => setShowCreateProjectModal(false)}
+                    onSave={handleCreateProject}
+                />
+            )}
+
+            {showAIPlanningModal && (
+                <AIPlanningModal onClose={() => setShowAIPlanningModal(false)} />
+            )}
+
+            {showScheduleGenerationModal && (
+                <ScheduleGenerationModal onClose={() => setShowScheduleGenerationModal(false)} />
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
                 {/* Left Column: Metrics & Projects */}
@@ -188,8 +232,13 @@ const BuilderDashboard = () => {
                             "Based on the steel shortage in North Suburbs, I recommend pre-stocking rebar for **Green Valley residency** within the next 48 hours to avoid a 12% cost hike."
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <button style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'white', color: '#003380', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Analyze Planning</button>
-                            <button style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Generate Schedule</button>
+                            <button
+                                onClick={() => setShowAIPlanningModal(true)}
+                                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'white', color: '#003380', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                            >
+                                Analyze Planning
+                            </button>
+                            <button style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowScheduleGenerationModal(true)}>Generate Schedule</button>
                         </div>
                     </div>
 

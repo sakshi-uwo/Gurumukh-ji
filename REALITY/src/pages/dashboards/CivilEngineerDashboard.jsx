@@ -8,7 +8,10 @@ import {
     Checks, FileArrowUp, PaperPlaneRight
 } from '@phosphor-icons/react';
 
+import IssueInstructionModal from '../../components/IssueInstructionModal';
+
 const CivilEngineerDashboard = () => {
+    const [showIssueInstructionModal, setShowIssueInstructionModal] = useState(false);
     const [assignedProjects] = useState([
         { id: 1, name: 'Saffron Greens', phase: 'Floor 12 Slab', task: 'Check Rebar Binding', deadline: 'Today', status: 'In Progress' },
         { id: 2, name: 'Metro Plaza', phase: 'Lower Basement', task: 'Waterproofing Audit', deadline: 'Tomorrow', status: 'Pending' }
@@ -49,7 +52,7 @@ const CivilEngineerDashboard = () => {
                         background: 'var(--pivot-blue)', color: 'white', border: 'none',
                         borderRadius: '12px', fontWeight: 700, cursor: 'pointer',
                         boxShadow: '0 4px 15px rgba(0, 71, 171, 0.2)'
-                    }}>
+                    }} onClick={() => setShowIssueInstructionModal(true)}>
                         <Plus size={20} weight="bold" /> Issue Instruction
                     </button>
                 </div>
@@ -256,6 +259,9 @@ const CivilEngineerDashboard = () => {
                     background: #f0f0f0;
                 }
             `}</style>
+            {showIssueInstructionModal && (
+                <IssueInstructionModal onClose={() => setShowIssueInstructionModal(false)} />
+            )}
         </div>
     );
 };
