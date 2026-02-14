@@ -36,6 +36,23 @@ export const authService = {
     }
 };
 
+export const signupService = {
+    signup: async (userData) => {
+        const response = await api.post('/signup', userData);
+        if (response.data._id) {
+            localStorage.setItem('userId', response.data._id);
+            localStorage.setItem('userName', response.data.name);
+        }
+        return response.data;
+    },
+    getUserId: () => {
+        return localStorage.getItem('userId');
+    },
+    getUserName: () => {
+        return localStorage.getItem('userName');
+    }
+};
+
 export const dashboardService = {
     getStats: async () => {
         const response = await api.get('/dashboard/stats');
@@ -45,13 +62,65 @@ export const dashboardService = {
 
 export const leadService = {
     getAll: async () => {
-        const response = await api.get('/leads');
+        const response = await api.get('/lead');
         return response.data;
     },
-    seed: async () => {
-        const response = await api.post('/leads/seed');
+    create: async (data) => {
+        const response = await api.post('/lead', data);
         return response.data;
     },
+    getAnalytics: async (filters) => {
+        const response = await api.get('/lead/analytics', { params: filters });
+        return response.data;
+    },
+    update: async (id, data) => {
+        const response = await api.patch(`/lead/${id}`, data);
+        return response.data;
+    },
+};
+
+export const taskService = {
+    getAll: async () => {
+        const response = await api.get('/tasks');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/tasks', data);
+        return response.data;
+    }
+};
+
+export const materialService = {
+    getAll: async () => {
+        const response = await api.get('/materials');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/materials', data);
+        return response.data;
+    }
+};
+
+export const attendanceService = {
+    getAll: async () => {
+        const response = await api.get('/attendance');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/attendance', data);
+        return response.data;
+    }
+};
+
+export const expenseService = {
+    getAll: async () => {
+        const response = await api.get('/expenses');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/expenses', data);
+        return response.data;
+    }
 };
 
 export const projectService = {
@@ -89,6 +158,43 @@ export const chatService = {
         const response = await api.post('/chat', messageData);
         return response.data;
     },
+};
+
+export const userService = {
+    getAll: async () => {
+        const response = await api.get('/users');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/users', data);
+        return response.data;
+    },
+    update: async (id, data) => {
+        const response = await api.patch(`/users/${id}`, data);
+        return response.data;
+    }
+};
+
+export const paymentService = {
+    getAll: async () => {
+        const response = await api.get('/payments');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/payments', data);
+        return response.data;
+    }
+};
+
+export const milestoneService = {
+    getAll: async () => {
+        const response = await api.get('/milestones');
+        return response.data;
+    },
+    create: async (data) => {
+        const response = await api.post('/milestones', data);
+        return response.data;
+    }
 };
 
 export default api;

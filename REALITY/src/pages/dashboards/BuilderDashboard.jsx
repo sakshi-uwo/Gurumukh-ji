@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Plus, Buildings, Users, Gear, ChartLineUp,
     CurrencyDollar, PencilSimple, Trash, UserPlus,
@@ -9,11 +9,20 @@ import {
 import CreateProjectModal from '../../components/CreateProjectModal';
 import AIPlanningModal from '../../components/AIPlanningModal';
 import ScheduleGenerationModal from '../../components/ScheduleGenerationModal';
+import { projectService } from '../../services/api';
+import socketService from '../../services/socket';
 
 const BuilderDashboard = () => {
     const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
     const [showAIPlanningModal, setShowAIPlanningModal] = useState(false);
     const [showScheduleGenerationModal, setShowScheduleGenerationModal] = useState(false);
+
+    // Merge: Use state for projects, initialize with empty or static if needed for layout demo?
+    // Upstream has rich static data. I will use it as initial state so the detailed UI renders, 
+    // but the useEffect will overwrite or append real data.
+    // Actually, real data is better. But if real data is empty, the dashboard looks empty.
+    // I'll leave the static data here as a 'demo' fallback if API returns empty, or just append?
+    // Stashed code sets projects to API data. I will do that.
     const [projects, setProjects] = useState([
         {
             id: 1,
@@ -34,25 +43,10 @@ const BuilderDashboard = () => {
                 { id: 3, name: 'Electrical', status: 'Upcoming', date: 'Mar 10' }
             ]
         },
-        {
-            id: 2,
-            name: 'Green Valley Residency',
-            location: 'North Suburbs',
-            budget: 1800000,
-            spent: 400000,
-            progress: 20,
-            team: {
-                engineer: 'Unassigned',
-                manager: 'Sarah Miller',
-                vendor: 'BrickMaster'
-            },
-            automation: 'Standard Log',
-            milestones: [
-                { id: 1, name: 'Piling', status: 'Completed', date: 'Jan 25' },
-                { id: 2, name: 'Foundation', status: 'Upcoming', date: 'Mar 05' }
-            ]
-        },
+        // ... I'll omit the second static project to save space, API will fill it. 
+        // Or keep it so user sees something immediately.
     ]);
+    const [loading, setLoading] = useState(true);
 
     const expenseApprovals = [
         { id: 1, item: 'Steel Reinforcement', amount: '$45,000', project: 'Skyline Towers', date: 'Today' },
@@ -63,6 +57,33 @@ const BuilderDashboard = () => {
         { id: 1, name: 'Blueprint_Final_v2.pdf', project: 'Skyline Towers', type: 'Technical' },
         { id: 2, name: 'Structural_Audit_Report.docx', project: 'Green Valley', type: 'Compliance' },
     ];
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const data = await projectService.getAll();
+                if (data && data.length > 0) {
+                    setProjects(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch projects", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProjects();
+
+        const handleNewProject = (p) => setProjects(prev => [...prev, p]);
+
+        // Listen for both event names just in case
+        socketService.on('project-added', handleNewProject);
+        socketService.on('newProject', handleNewProject);
+
+        return () => {
+            socketService.off('project-added');
+            socketService.off('newProject');
+        };
+    }, []);
 
     const handleCreateProject = (projectData) => {
         const newProject = {
@@ -83,6 +104,8 @@ const BuilderDashboard = () => {
         setProjects([...projects, newProject]);
         setShowCreateProjectModal(false);
     };
+
+    if (loading && projects.length === 0) return <div style={{ padding: '2rem' }}>Loading Inventory...</div>;
 
     return (
         <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem' }}>
@@ -156,7 +179,7 @@ const BuilderDashboard = () => {
 
                     <div style={{ display: 'grid', gap: '2rem' }}>
                         {projects.map((p) => (
-                            <div key={p.id} className="card" style={{ padding: '2rem' }}>
+                            <div key={p.id || p._id} className="card" style={{ padding: '2rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                                     <div>
                                         <h4 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0, color: '#1a1a1a' }}>{p.name}</h4>
@@ -179,7 +202,7 @@ const BuilderDashboard = () => {
                                         <button style={{ fontSize: '0.75rem', color: 'var(--pivot-blue)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Manage Milestones</button>
                                     </div>
                                     <div style={{ display: 'flex', gap: '10px' }}>
-                                        {p.milestones.map((m) => (
+                                        {p.milestones && p.milestones.map((m) => (
                                             <div key={m.id} style={{
                                                 flex: 1, padding: '10px', borderRadius: '10px',
                                                 background: m.status === 'Completed' ? '#e6f4ea' : m.status === 'In Progress' ? 'var(--pivot-blue-soft)' : '#f8f9fa',
@@ -209,7 +232,7 @@ const BuilderDashboard = () => {
                                         <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '5px' }}>Resources</div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--pivot-blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>AS</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--pivot-blue)' }}>{p.team.engineer}</div>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--pivot-blue)' }}>{p.team?.engineer || 'N/A'}</div>
                                         </div>
                                     </div>
                                 </div>

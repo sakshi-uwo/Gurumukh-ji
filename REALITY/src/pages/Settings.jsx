@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Bell, Palette, ShieldCheck, Database, SlidersHorizontal } from '@phosphor-icons/react';
+import { authService } from '../services/api';
 
 const Settings = ({ theme: currentTheme, setTheme }) => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -24,11 +25,11 @@ const Settings = ({ theme: currentTheme, setTheme }) => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div className="input-group">
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Full Name</label>
-                                <input type="text" defaultValue="Alex Rodriguez" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--white)', color: 'var(--text-main)' }} />
+                                <input type="text" defaultValue={authService.getCurrentUser()?.name || ""} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--white)', color: 'var(--text-main)' }} />
                             </div>
                             <div className="input-group">
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Email Address</label>
-                                <input type="email" defaultValue="alex@ai-auto.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--white)', color: 'var(--text-main)' }} />
+                                <input type="email" defaultValue={authService.getCurrentUser()?.email || ""} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--white)', color: 'var(--text-main)' }} />
                             </div>
                         </div>
                     </div>

@@ -1,18 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     UserPlus, Gear, ShieldCheck, ToggleLeft, ToggleRight,
     PencilSimple, Plus, CreditCard, ListBullets, ChartBar,
     CaretRight, BellRinging, Globe, Lock, Download
 } from '@phosphor-icons/react';
 import CreateUserModal from '../../components/CreateUserModal';
+import socketService from '../../services/socket';
+import { leadService, userService, projectService } from '../../services/api';
 
 const AdminDashboard = ({ setCurrentPage }) => {
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // Static users maintained from Upstream for UI demo purposes
     const [users, setUsers] = useState([
         { id: 1, name: 'John Doe', role: 'Builder', status: 'Active', permissions: 'Full Access' },
         { id: 2, name: 'Alice Smith', role: 'Civil Engineer', status: 'Active', permissions: 'Site Reports' },
         { id: 3, name: 'Bob Wilson', role: 'Client', status: 'Inactive', permissions: 'Read Only' },
     ]);
+
+    // Dynamic data from API (Stashed changes)
+    const [leads, setLeads] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const workflows = [
         { id: 1, name: 'Auto-Assign Civil Engineer', trigger: 'Project Creation', status: 'Enabled' },
@@ -25,6 +34,57 @@ const AdminDashboard = ({ setCurrentPage }) => {
         { id: 2, action: 'Billing Tier Updated', user: 'Admin', time: '5 hours ago', status: 'Finance' },
         { id: 3, action: 'Workflow Triggered', user: 'System', time: '12 hours ago', status: 'Automation' },
     ];
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            // Only showing loading for initial mount if needed, but allowing UI to render static parts
+            try {
+                const [leadsData, usersData, projectsData] = await Promise.all([
+                    leadService.getAll(),
+                    userService.getAll(),
+                    projectService.getAll()
+                ]);
+                setLeads(leadsData);
+                // We could merge usersData with users state here if IDs matched
+                setProjects(projectsData);
+            } catch (error) {
+                console.error("Failed to fetch dashboard data", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAllData();
+
+        const handleNewLead = (lead) => {
+            setLeads(prev => [lead, ...prev]);
+        };
+
+        const handleLeadUpdated = (updatedLead) => {
+            setLeads(prev => prev.map(l =>
+                l._id === updatedLead._id ? updatedLead : l
+            ));
+        };
+
+        const handleNewUser = (user) => {
+            // Optional: Add to users list if format matches
+        };
+
+        const handleNewProject = (project) => {
+            setProjects(prev => [...prev, project]);
+        };
+
+        socketService.on('newLead', handleNewLead);
+        socketService.on('leadUpdated', handleLeadUpdated);
+        socketService.on('newUser', handleNewUser);
+        socketService.on('newProject', handleNewProject);
+
+        return () => {
+            socketService.off('newLead', handleNewLead);
+            socketService.off('leadUpdated', handleLeadUpdated);
+            socketService.off('newUser', handleNewUser);
+            socketService.off('newProject', handleNewProject);
+        };
+    }, []);
 
     const toggleStatus = (id) => {
         setUsers(users.map(u => u.id === id ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u));
@@ -76,17 +136,22 @@ const AdminDashboard = ({ setCurrentPage }) => {
 
             {/* Quick Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-                {[
-                    { label: 'Active Subscriptions', value: '48', color: 'var(--pivot-blue)' },
-                    { label: 'System Health', value: '99.9%', color: '#4CAF50' },
-                    { label: 'Pending Approvals', value: '12', color: '#ff9f4d' },
-                    { label: 'Audit Alerts', value: '0', color: '#e53e3e' }
-                ].map((stat, i) => (
-                    <div key={i} className="card" style={{ padding: '1.2rem' }}>
-                        <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px' }}>{stat.label}</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: stat.color }}>{stat.value}</div>
-                    </div>
-                ))}
+                <div className="card" style={{ padding: '1.2rem' }}>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px' }}>Active Subscriptions (Users)</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--pivot-blue)' }}>{users.length}</div>
+                </div>
+                <div className="card" style={{ padding: '1.2rem' }}>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px' }}>System Health</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#4CAF50' }}>99.9%</div>
+                </div>
+                <div className="card" style={{ padding: '1.2rem' }}>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px' }}>New Leads (Live)</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ff9f4d' }}>{leads.length}</div>
+                </div>
+                <div className="card" style={{ padding: '1.2rem' }}>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px' }}>Audit Alerts</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#e53e3e' }}>0</div>
+                </div>
             </div>
 
             {/* Section 1: User Management & Permissions */}
@@ -204,6 +269,67 @@ const AdminDashboard = ({ setCurrentPage }) => {
                         Last generated: Yesterday, 11:45 PM
                     </div>
                 </div>
+            </div>
+
+            {/* Added: Recent Leads from Real-time System */}
+            <div className="card" style={{ padding: '1.5rem', marginTop: '2rem' }}>
+                <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Recent Leads (Real-Time)</h3>
+                {leads.length > 0 ? (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--glass-border)' }}>
+                                <th style={{ padding: '1rem' }}>Name</th>
+                                <th style={{ padding: '1rem' }}>Email</th>
+                                <th style={{ padding: '1rem' }}>Source</th>
+                                <th style={{ padding: '1rem' }}>Interactions</th>
+                                <th style={{ padding: '1rem' }}>Status</th>
+                                <th style={{ padding: '1rem' }}>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {leads.slice(0, 5).map((l, i) => (
+                                <tr key={i} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                                    <td style={{ padding: '1rem', fontWeight: 600 }}>{l.user?.name || 'N/A'}</td>
+                                    <td style={{ padding: '1rem', fontSize: '0.85rem' }}>{l.user?.email || 'N/A'}</td>
+                                    <td style={{ padding: '1rem', fontSize: '0.85rem' }}>{l.source}</td>
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                        <span style={{
+                                            padding: '6px 12px',
+                                            borderRadius: '50%',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 700,
+                                            background: 'var(--pivot-blue)',
+                                            color: 'white',
+                                            display: 'inline-block',
+                                            minWidth: '32px'
+                                        }}>
+                                            {l.interactionCount || 1}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <span style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '12px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 700,
+                                            background: l.status === 'Hot' ? '#ffebeb' : (l.status === 'Warm' ? '#fff4eb' : '#ebf4ff'),
+                                            color: l.status === 'Hot' ? '#ff4d4d' : (l.status === 'Warm' ? '#ff9f4d' : '#4d9fff')
+                                        }}>
+                                            {l.status}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1rem', fontSize: '0.85rem' }}>
+                                        {new Date(l.updatedAt).toLocaleDateString()}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
+                        Waiting for new leads... 📡
+                    </div>
+                )}
             </div>
         </div>
     );

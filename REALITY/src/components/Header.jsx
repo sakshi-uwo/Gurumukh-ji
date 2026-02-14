@@ -5,12 +5,8 @@ import socketService from '../services/socket';
 const Header = ({ user, onLogout }) => {
     // const [isConnected, setIsConnected] = React.useState(socketService.socket?.connected || false);
     const [showNotifications, setShowNotifications] = React.useState(false);
-    const [notifications, setNotifications] = React.useState([
-        { id: 1, title: 'New High-Score Lead', time: '2 mins ago', type: 'Hot', detail: 'Johnathan Smith just inquired about Skyline Towers.' },
-        { id: 2, title: 'Site Visit Confirmed', time: '1 hour ago', type: 'Warm', detail: 'Elena Rodriguez scheduled a visit for Saturday.' },
-        { id: 3, title: 'Inventory Alert', time: '3 hours ago', type: 'Cold', detail: 'Only 12 units remaining in Phase 1 of Green Valley.' },
-    ]);
-    const [unread, setUnread] = React.useState(true);
+    const [notifications, setNotifications] = React.useState([]);
+    const [unread, setUnread] = React.useState(false);
 
     React.useEffect(() => {
         // const handleConnect = () => setIsConnected(true);

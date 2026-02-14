@@ -102,7 +102,7 @@ const CalendarPreview = ({ visits = [] }) => {
                     <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>
                         {selectedDateVisits.map((visit, index) => (
                             <div key={visit._id} style={{ marginBottom: index < selectedDateVisits.length - 1 ? '6px' : '0' }}>
-                                • {new Date(visit.visitDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {visit.project?.name}
+                                • {new Date(visit.visitDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {visit.project?.title}
                             </div>
                         ))}
                     </div>
@@ -124,7 +124,7 @@ const SiteVisits = () => {
         const fetchVisits = async () => {
             try {
                 const response = await visitService.getAll();
-                setVisits(response.data || []);
+                setVisits(response || []);
             } catch (error) {
                 console.error("Visit Fetch Error:", error);
             } finally {
@@ -147,6 +147,34 @@ const SiteVisits = () => {
             socketService.off('visit-status-updated');
         };
     }, []);
+
+    const handleAddVisit = async () => {
+        try {
+            const [leads, projects] = await Promise.all([
+                leadService.getAll(),
+                projectService.getAll()
+            ]);
+
+            if (leads.length === 0 || projects.length === 0) {
+                alert("Please add at least one Lead and one Project first.");
+                return;
+            }
+
+            const executive = prompt("Enter Executive Name:", "Sales Rep");
+            if (!executive) return;
+
+            await visitService.create({
+                lead: leads[0]._id,
+                project: projects[0]._id,
+                visitDate: new Date(Date.now() + 86400000), // Tomorrow
+                executive,
+                status: 'Scheduled'
+            });
+            alert("Visit scheduled for tomorrow with " + leads[0].name + "!");
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const getStatusClass = (status) => {
         switch (status) {
@@ -179,6 +207,14 @@ const SiteVisits = () => {
                 <div className="card visits-list-card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Visit Schedule</h2>
+                        <button
+                            onClick={handleAddVisit}
+                            style={{
+                                padding: '8px 16px', background: 'var(--pivot-blue)', color: 'white',
+                                border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
+                            }}>
+                            + Schedule New Visit
+                        </button>
                     </div>
 
                     <table className="visits-table">
@@ -196,7 +232,7 @@ const SiteVisits = () => {
                             {visits.map((visit) => (
                                 <tr key={visit._id} className="visit-row">
                                     <td style={{ fontWeight: 600 }}>{visit.lead?.name || 'N/A'}</td>
-                                    <td>{visit.project?.name || 'N/A'}</td>
+                                    <td>{visit.project?.title || 'N/A'}</td>
                                     <td>{new Date(visit.visitDate).toLocaleDateString()}</td>
                                     <td>{new Date(visit.visitDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                     <td>{visit.executive}</td>

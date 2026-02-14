@@ -3,6 +3,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
+import LeadsAnalytics from './pages/LeadsAnalytics';
+import SiteVisits from './pages/SiteVisits';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import BuilderDashboard from './pages/dashboards/BuilderDashboard';
 import CivilEngineerDashboard from './pages/dashboards/CivilEngineerDashboard';
@@ -51,6 +53,9 @@ function DashboardApp() {
 
   const renderPage = () => {
     if (currentPage === 'settings') return <Settings theme={theme} setTheme={setTheme} />;
+    if (currentPage === 'leads') return <LeadsAnalytics />;
+    if (currentPage === 'projects') return <Projects />;
+    if (currentPage === 'visits') return <SiteVisits />;
     if (currentPage === 'reports') return <GlobalReports setCurrentPage={setCurrentPage} />;
     if (currentPage === 'billing') return <BillingAndPlans setCurrentPage={setCurrentPage} />;
 

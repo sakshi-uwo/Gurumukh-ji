@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     HardHat, Users, CheckCircle, Clock,
     ArrowRight, MapPin, ChartBar, Plus,
@@ -7,8 +7,11 @@ import {
     ShieldWarning, Package, FileArrowUp, VideoCamera,
     Camera, PaperPlaneRight
 } from '@phosphor-icons/react';
+import { attendanceService, expenseService } from '../../services/api';
+import socketService from '../../services/socket';
 
 const ProjectSiteDashboard = () => {
+    // Static data for demo / UI structure
     const [stats] = useState([
         { label: 'Active Labor', value: '156', icon: <Users size={24} />, color: '#4CAF50' },
         { label: 'Site Productivity', value: '92%', icon: <TrendUp size={24} />, color: 'var(--pivot-blue)' },
@@ -21,17 +24,69 @@ const ProjectSiteDashboard = () => {
         { id: 3, task: 'Waterproofing - Basement', team: 'Sub-Vendor X', progress: 20, status: 'Delayed' }
     ];
 
-    const laborAttendance = [
-        { trade: 'Skilled Masons', present: 24, total: 25, productivity: 'High' },
-        { trade: 'Electricians', present: 12, total: 15, productivity: 'Average' },
-        { trade: 'General Labor', present: 85, total: 90, productivity: 'High' }
-    ];
-
     const materialUsage = [
         { item: 'Cement (Grade 53)', used: '45 Bags', remaining: '210 Bags', status: 'Optimal' },
         { item: 'Steel Rails (12mm)', used: '1.2 Tons', remaining: '4 Tons', status: 'Optimal' },
         { item: 'Coarse Sand', used: '2 Trucks', remaining: '0.5 Trucks', status: 'Low' }
     ];
+
+    // Dynamic data from API
+    const [attendance, setAttendance] = useState([]);
+    const [expenses, setExpenses] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [attendanceData, expensesData] = await Promise.all([
+                    attendanceService.getAll(),
+                    expenseService.getAll()
+                ]);
+                setAttendance(attendanceData);
+                setExpenses(expensesData);
+            } catch (error) {
+                console.error("Failed to fetch site data", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+
+        const handleNewAttendance = (a) => setAttendance(prev => [a, ...prev]);
+        const handleNewExpense = (e) => setExpenses(prev => [e, ...prev]);
+
+        socketService.on('attendance-added', handleNewAttendance);
+        socketService.on('expense-added', handleNewExpense);
+
+        return () => {
+            socketService.off('attendance-added');
+            socketService.off('expense-added');
+        };
+    }, []);
+
+    const handleAddAttendance = async () => {
+        const shift = prompt("Enter shift name:");
+        if (!shift) return;
+        try {
+            await attendanceService.create({ shift, present: 0, absent: 0 });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // Derived or Combined Attendance List (Prefer API, fall back to demo if empty)
+    const displayAttendance = attendance.length > 0
+        ? attendance.map((a, i) => ({
+            trade: a.shift || `Shift ${i + 1}`,
+            present: a.present || 0,
+            total: (a.present || 0) + (a.absent || 0),
+            productivity: 'Average' // Placeholder
+        }))
+        : [
+            { trade: 'Skilled Masons', present: 24, total: 25, productivity: 'High' },
+            { trade: 'Electricians', present: 12, total: 15, productivity: 'Average' },
+            { trade: 'General Labor', present: 85, total: 90, productivity: 'High' }
+        ];
 
     return (
         <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem' }}>
@@ -206,20 +261,20 @@ const ProjectSiteDashboard = () => {
                             <UsersThree size={24} color="#4CAF50" weight="bold" /> Labor & Attendance
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {laborAttendance.map((l, i) => (
-                                <div key={i} style={{ paddingBottom: '12px', borderBottom: i !== laborAttendance.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                            {displayAttendance.map((l, i) => (
+                                <div key={i} style={{ paddingBottom: '12px', borderBottom: i !== displayAttendance.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1a1a1a' }}>{l.trade}</div>
                                         <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4CAF50' }}>{l.present}/{l.total}</div>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ fontSize: '0.7rem', color: '#2c3e50', fontWeight: 600 }}>Shift: General (8AM-5PM)</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#2c3e50', fontWeight: 600 }}>Shift: {l.trade.includes('Shift') ? 'General' : 'Active'}</div>
                                         <div style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: '#e6f4ea', color: '#1e7e34', fontWeight: 700 }}>{l.productivity} Productivity</div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <button style={{ width: '100%', marginTop: '1.5rem', padding: '12px', borderRadius: '10px', background: '#f8f9fa', color: '#1a1a1a', border: '1px solid #ddd', fontWeight: 700, cursor: 'pointer' }}>Manage Attendance</button>
+                        <button onClick={handleAddAttendance} style={{ width: '100%', marginTop: '1.5rem', padding: '12px', borderRadius: '10px', background: '#f8f9fa', color: '#1a1a1a', border: '1px solid #ddd', fontWeight: 700, cursor: 'pointer' }}>Manage Attendance</button>
                     </div>
 
                     {/* Site Diary & Logs */}

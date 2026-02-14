@@ -3,7 +3,8 @@ import { Buildings, HouseLine, Tree, Waves, MapPin, Plus, X, CurrencyDollar, Cal
 import { projectService } from '../services/api';
 import socketService from '../services/socket';
 
-const ProjectCard = ({ name, location, progress, totalUnits, availableUnits, status, statusColor }) => {
+const ProjectCard = ({ title, location, progress, totalUnits, soldUnits, status, statusColor }) => {
+    const availableUnits = totalUnits - soldUnits;
     const Icon = Buildings; // Default icon
 
     return (
@@ -19,7 +20,7 @@ const ProjectCard = ({ name, location, progress, totalUnits, availableUnits, sta
                 </span>
             </div>
             <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>{name}</h3>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>{title}</h3>
                 <div style={{ fontSize: '0.85rem', color: 'var(--charcoal)', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '1.2rem' }}>
                     <MapPin size={16} />
                     <span>{location}</span>
@@ -50,12 +51,12 @@ const ProjectCard = ({ name, location, progress, totalUnits, availableUnits, sta
 
 const AddProjectModal = ({ isOpen, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
-        name: '',
+        title: '',
         location: '',
         pricingRange: '',
         description: '',
         totalUnits: '',
-        availableUnits: '',
+        soldUnits: '',
         progress: 0,
         status: 'Active'
     });
@@ -142,8 +143,8 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit }) => {
                             </label>
                             <input
                                 type="text"
-                                name="name"
-                                value={formData.name}
+                                name="title"
+                                value={formData.title}
                                 onChange={handleChange}
                                 required
                                 placeholder="e.g., Skyline Towers"
@@ -291,15 +292,15 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit }) => {
 
                             <div>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: '#374151', display: 'block' }}>
-                                    Available Units
+                                    Sold Units
                                 </label>
                                 <input
                                     type="number"
-                                    name="availableUnits"
-                                    value={formData.availableUnits}
+                                    name="soldUnits"
+                                    value={formData.soldUnits}
                                     onChange={handleChange}
                                     required
-                                    placeholder="e.g., 180"
+                                    placeholder="e.g., 60"
                                     style={{
                                         width: '100%',
                                         padding: '14px 16px',
@@ -378,7 +379,7 @@ const Projects = () => {
         const fetchProjects = async () => {
             try {
                 const response = await projectService.getAll();
-                setProjects(response.data || []);
+                setProjects(response || []);
             } catch (error) {
                 console.error("Project Fetch Error:", error);
             } finally {

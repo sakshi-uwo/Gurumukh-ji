@@ -58,9 +58,9 @@ const Dashboard = ({ setCurrentPage }) => {
                     projectService.getAll()
                 ]);
 
-                setStats(statsRes.data);
-                setLeads(leadsRes.data || []);
-                setProjects(projectsRes.data || []);
+                setStats(statsRes);
+                setLeads(leadsRes || []);
+                setProjects(projectsRes || []);
             } catch (error) {
                 console.error("Dashboard Fetch Error:", error);
             } finally {
@@ -70,20 +70,29 @@ const Dashboard = ({ setCurrentPage }) => {
 
         fetchDashboardData();
 
-        // Real-time listener
+        // Real-time listeners
         socketService.on('dashboard-update', (newStats) => {
             setStats(newStats);
         });
 
-        socketService.on('lead-added', (lead) => {
+        socketService.on('newLead', (lead) => {
             setLeads(prev => [lead, ...prev]);
+            // Update stats count
+            setStats(prev => prev ? {
+                ...prev,
+                totalLeads: (prev.totalLeads || 0) + 1,
+                distribution: {
+                    ...prev.distribution,
+                    [lead.status]: (prev.distribution[lead.status] || 0) + 1
+                }
+            } : prev);
         });
 
-        socketService.on('lead-updated', (updatedLead) => {
+        socketService.on('leadUpdated', (updatedLead) => {
             setLeads(prev => prev.map(l => l._id === updatedLead._id ? updatedLead : l));
         });
 
-        socketService.on('project-added', (project) => {
+        socketService.on('newProject', (project) => {
             setProjects(prev => [project, ...prev]);
         });
 
@@ -93,9 +102,9 @@ const Dashboard = ({ setCurrentPage }) => {
 
         return () => {
             socketService.off('dashboard-update');
-            socketService.off('lead-added');
-            socketService.off('lead-updated');
-            socketService.off('project-added');
+            socketService.off('newLead');
+            socketService.off('leadUpdated');
+            socketService.off('newProject');
             socketService.off('project-updated');
         };
     }, []);
@@ -254,18 +263,18 @@ const Dashboard = ({ setCurrentPage }) => {
             <div className="card" style={{ gridColumn: 'span 1' }}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Inventory Status</h2>
                 {projects.slice(0, 5).map((p, i) => {
-                    const soldPercent = Math.round(((p.totalUnits - p.availableUnits) / p.totalUnits) * 100) || 0;
+                    const soldPercent = Math.round((p.soldUnits / p.totalUnits) * 100) || 0;
                     return (
                         <div key={i} style={{ marginBottom: '1.2rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '5px' }}>
-                                <span>{p.name}</span>
+                                <span>{p.title}</span>
                                 <span style={{ fontWeight: 700 }}>{soldPercent}% Sold</span>
                             </div>
                             <div style={{ height: '8px', background: 'var(--light-grey)', borderRadius: '4px', overflow: 'hidden' }}>
                                 <div style={{ height: '100%', width: `${soldPercent}%`, background: 'var(--pivot-blue)', borderRadius: '4px' }}></div>
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--charcoal)', marginTop: '4px', textAlign: 'right' }}>
-                                {p.availableUnits} units left
+                                {p.totalUnits - p.soldUnits} units left
                             </div>
                         </div>
                     );

@@ -59,6 +59,42 @@ const Footer = () => {
         }
     };
 
+    const handleWhatsAppClick = async () => {
+        const whatsappUrl = "https://api.whatsapp.com/send?phone=918359890909";
+
+        try {
+            // Check if user exists in localStorage
+            let userId = localStorage.getItem('userId');
+
+            // If no user, prompt for signup
+            if (!userId) {
+                const name = prompt("Please enter your name:");
+                if (!name) return; // User cancelled
+
+                const email = prompt("Please enter your email:");
+                if (!email) return; // User cancelled
+
+                // Create user via signup
+                const signupResponse = await axios.post(apis.signup, { name, email });
+                userId = signupResponse.data._id;
+                localStorage.setItem('userId', userId);
+                localStorage.setItem('userName', signupResponse.data.name);
+                console.log("✅ User signed up:", signupResponse.data.name);
+            }
+
+            // Create lead with user reference
+            await axios.post(apis.lead, {
+                user: userId,
+                source: "WhatsApp Button"
+            });
+            console.log("✅ Lead captured successfully");
+        } catch (error) {
+            console.error("❌ Failed to capture lead", error);
+        } finally {
+            window.open(whatsappUrl, '_blank');
+        }
+    };
+
     return (
         <>
             <motion.footer
@@ -80,24 +116,57 @@ const Footer = () => {
 
                             <div className="social-links">
                                 {[
-                                    { Icon: Linkedin, href: "https://www.linkedin.com/in/aimall-global/", label: "LinkedIn" },
-                                    { Icon: Twitter, href: "https://x.com/aimallglobal", label: "Twitter" },
-                                    { Icon: Facebook, href: "https://www.facebook.com/aimallglobal/", label: "Facebook" },
-                                    { Icon: Instagram, href: "https://www.instagram.com/aimall.global/", label: "Instagram" },
-                                    { Icon: Youtube, href: "https://www.youtube.com/@aimallglobal", label: "YouTube" },
-                                    { Icon: MessageCircle, href: "https://api.whatsapp.com/send?phone=918359890909", label: "WhatsApp" }
+                                    { Icon: Linkedin, href: "https://www.linkedin.com/in/aimall-global/", label: "LinkedIn", source: "Website" },
+                                    { Icon: Twitter, href: "https://x.com/aimallglobal", label: "Twitter", source: "Twitter" },
+                                    { Icon: Facebook, href: "https://www.facebook.com/aimallglobal/", label: "Facebook", source: "Website" },
+                                    { Icon: Instagram, href: "https://www.instagram.com/aimall.global/", label: "Instagram", source: "Instagram" },
+                                    { Icon: Youtube, href: "https://www.youtube.com/@aimallglobal", label: "YouTube", source: "YouTube" }
                                 ].map((social, i) => (
-                                    <a
+                                    <button
                                         key={i}
-                                        href={social.href}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                        onClick={async () => {
+                                            try {
+                                                let userId = localStorage.getItem('userId');
+
+                                                if (!userId) {
+                                                    const name = prompt("Please enter your name:");
+                                                    if (!name) return;
+
+                                                    const email = prompt("Please enter your email:");
+                                                    if (!email) return;
+
+                                                    const signupResponse = await axios.post(apis.signup, { name, email });
+                                                    userId = signupResponse.data._id;
+                                                    localStorage.setItem('userId', userId);
+                                                    localStorage.setItem('userName', signupResponse.data.name);
+                                                }
+
+                                                await axios.post(apis.lead, {
+                                                    user: userId,
+                                                    source: social.source
+                                                });
+                                                console.log(`✅ Lead tracked for ${social.source}`);
+                                            } catch (error) {
+                                                console.error(`❌ Failed to track ${social.source} lead`, error);
+                                            } finally {
+                                                window.open(social.href, '_blank');
+                                            }
+                                        }}
                                         className="social-icon"
                                         aria-label={social.label}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                                     >
                                         <social.Icon size={20} color="currentColor" />
-                                    </a>
+                                    </button>
                                 ))}
+                                <button
+                                    onClick={() => handleWhatsAppClick()}
+                                    className="social-icon"
+                                    aria-label="WhatsApp"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                >
+                                    <MessageCircle size={20} color="currentColor" />
+                                </button>
                             </div>
                         </div>
 
